@@ -26,6 +26,7 @@ async function run() {
       .db("NU-Immigration")
       .collection("services");
     const reviewCollection = client.db("NU-Immigration").collection("reviews");
+    const blogCollection = client.db("NU-Immigration").collection("blogs");
 
     // CREATE (Service)
     app.post("/services", async (req, res) => {
@@ -78,6 +79,14 @@ async function run() {
       const query = { _id: ObjectId(id) };
       const service = await serviceCollection.findOne(query);
       res.send(service);
+    });
+
+    //   READ (Blogs)
+    app.get("/blogs", async (req, res) => {
+      const query = {};
+      const cursor = blogCollection.find(query);
+      const blogs = await cursor.toArray();
+      res.send(blogs);
     });
   } catch (error) {
     console.log(error);
