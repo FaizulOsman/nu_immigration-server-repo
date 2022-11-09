@@ -3,6 +3,7 @@ const cors = require("cors");
 const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
 const app = express();
 const port = process.env.PORT || "5000";
+const jwt = require("jsonwebtoken");
 
 // dotenv
 require("dotenv").config();
@@ -23,6 +24,24 @@ const client = new MongoClient(uri, {
   useUnifiedTopology: true,
   serverApi: ServerApiVersion.v1,
 });
+
+function verifyJWT(req, res, next) {
+  const authHeader = req.headers.authorization;
+  // If user doesn’t have token it will send error
+  if (!authHeader) {
+    return res.status(401).send({ message: "Unauthorized access" });
+  }
+  const token = authHeader.split(" ")[1];
+  // Verify token for invalid, wrong, expired user
+  jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, function (err, decoded) {
+    if (err) {
+      return res.status(401).send({ message: "Forbidden access" });
+    }
+    req.decoded = decoded;
+    next(); // If you don’t use next() it will not go for next condition
+  });
+}
+
 async function run() {
   try {
     const serviceCollection = client
@@ -30,6 +49,15 @@ async function run() {
       .collection("services");
     const reviewCollection = client.db("NU-Immigration").collection("reviews");
     const blogCollection = client.db("NU-Immigration").collection("blogs");
+
+    // Create JWT Token
+    app.post("/jwt", (req, res) => {
+      const user = req.body;
+      const token = jwt.sign(user, process.env.ACCESS_TOKEN_SECRET, {
+        expiresIn: "1h",
+      });
+      res.send({ token });
+    });
 
     // CREATE (Service)
     app.post("/services", async (req, res) => {
@@ -55,7 +83,7 @@ async function run() {
     });
 
     // CREATE (Review)
-    app.post("/reviews", async (req, res) => {
+    app.post("/reviews", verifyJWT, async (req, res) => {
       const review = req.body;
       const result = await reviewCollection.insertOne(review);
       res.send(result);
@@ -63,13 +91,32 @@ async function run() {
 
     // Read (Review)
     app.get("/reviews", async (req, res) => {
-      const cursor = reviewCollection.find({});
+      const query = {};
+      const cursor = reviewCollection.find(query);
+      const reviews = await cursor.toArray();
+      res.send(reviews);
+    });
+
+    // Read (Review)
+    app.get("/myreviews", verifyJWT, async (req, res) => {
+      const decoded = req.decoded;
+      // If users email doesn’t match searching email it will send error
+      if (decoded.email !== req.query.email) {
+        res.status(403).send({ message: "Unauthorized access" });
+      }
+
+      let query = {};
+      // Make query as dynamically
+      if (req.query.email) {
+        query = { email: req.query.email };
+      }
+      const cursor = reviewCollection.find(query);
       const reviews = await cursor.toArray();
       res.send(reviews);
     });
 
     // DELETE (Review)
-    app.delete("/reviews/:id", async (req, res) => {
+    app.delete("/reviews/:id", verifyJWT, async (req, res) => {
       const id = req.params.id;
       const query = { _id: ObjectId(id) };
       const result = await reviewCollection.deleteOne(query);
