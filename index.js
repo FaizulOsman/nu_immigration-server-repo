@@ -4,16 +4,19 @@ const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
 const app = express();
 const port = process.env.PORT || "5000";
 
+// dotenv
 require("dotenv").config();
 
 // middle wares
 app.use(cors());
 app.use(express.json());
 
+// Home page
 app.get("/", (req, res) => {
   res.send("Hello World");
 });
 
+// Connect With MongoDB
 const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASSWORD}@cluster0.mzkazhr.mongodb.net/?retryWrites=true&w=majority`;
 const client = new MongoClient(uri, {
   useNewUrlParser: true,
