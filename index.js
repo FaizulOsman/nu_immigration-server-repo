@@ -85,7 +85,12 @@ async function run() {
     //   READ (Three Services)
     app.get("/threeservices", async (req, res) => {
       const query = {};
-      const cursor = serviceCollection.find(query);
+      const cursor = serviceCollection
+        .find(query)
+        .sort({ _id: -1 }, function (err, docs) {
+          console.log(docs);
+          res.json(docs);
+        });
       const services = await cursor.limit(3).toArray();
       res.send(services);
     });
