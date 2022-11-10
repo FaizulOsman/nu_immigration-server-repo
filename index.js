@@ -74,6 +74,14 @@ async function run() {
       res.send(services);
     });
 
+    // DELETE (Service)
+    app.delete("/services/:id", verifyJWT, async (req, res) => {
+      const id = req.params.id;
+      const query = { _id: ObjectId(id) };
+      const result = await serviceCollection.deleteOne(query);
+      res.send(result);
+    });
+
     //   READ (Three Services)
     app.get("/threeservices", async (req, res) => {
       const query = {};
@@ -146,7 +154,6 @@ async function run() {
       const review = await reviewCollection.findOne(query);
       res.send(review);
     });
-
     app.put("/reviews/:id", async (req, res) => {
       const id = req.params.id;
       const query = { _id: ObjectId(id) };
