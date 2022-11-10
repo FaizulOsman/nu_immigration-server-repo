@@ -69,7 +69,12 @@ async function run() {
     //   READ (Services)
     app.get("/services", async (req, res) => {
       const query = {};
-      const cursor = serviceCollection.find(query);
+      const cursor = serviceCollection
+        .find(query)
+        .sort({ _id: -1 }, function (err, docs) {
+          console.log(docs);
+          res.json(docs);
+        });
       const services = await cursor.toArray();
       res.send(services);
     });
